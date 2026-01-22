@@ -7,6 +7,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class EnterpriseSmartOpsApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(EnterpriseSmartOpsApplication.class, args);
+        SpringApplication.run(
+                EnterpriseSmartOpsApplication.class,
+                args
+        );
     }
 }

@@ -5,44 +5,60 @@ import java.security.Key;
 import java.util.Date;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
-/*
- * JWT Utility class
- * Handles token creation, validation, and extraction
- */
+@Component
 public class JwtUtil {
 
-    // MUST be at least 32 characters for HS256
-    private static final String SECRET_KEY =
-            "enterprise-smart-ops-secret-key-1234567890123456";
+    private final Key signingKey;
+    private final long expirationTime;
 
-    private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 10; // 10 hours
+    public JwtUtil(
+            @Value("${jwt.secret:}") String secret,
+            @Value("${jwt.expiration:0}") long expirationTime
+    ) {
+        if (!StringUtils.hasText(secret) || secret.length() < 32) {
+            throw new IllegalStateException(
+                    "JWT_SECRET is missing or too short (min 32 chars)"
+            );
+        }
 
-    private static Key getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+        if (expirationTime <= 0) {
+            throw new IllegalStateException(
+                    "jwt.expiration must be a positive number"
+            );
+        }
+
+        this.signingKey =
+                Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.expirationTime = expirationTime;
+
+        System.out.println("✅ JWT CONFIG LOADED SUCCESSFULLY");
     }
 
-    // ✅ Generate JWT with EMAIL + ROLE
-    public static String generateToken(String email, String role) {
+    public String generateToken(String email, String role) {
         return Jwts.builder()
                 .setClaims(Map.of("role", role))
                 .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(
-                        new Date(System.currentTimeMillis() + EXPIRATION_TIME)
+                        new Date(System.currentTimeMillis() + expirationTime)
                 )
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .signWith(signingKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public static boolean validateToken(String token) {
+    public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
+                    .setSigningKey(signingKey)
                     .build()
                     .parseClaimsJws(token);
             return true;
@@ -51,18 +67,18 @@ public class JwtUtil {
         }
     }
 
-    public static String extractEmail(String token) {
+    public String extractEmail(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(signingKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
                 .getSubject();
     }
 
-    public static String extractRole(String token) {
+    public String extractRole(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(signingKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody()

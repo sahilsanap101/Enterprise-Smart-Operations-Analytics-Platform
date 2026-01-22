@@ -3,68 +3,30 @@ package com.enterprise.ops.backend.auth;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import com.enterprise.ops.backend.user.User;
-import com.enterprise.ops.backend.user.UserRepository;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthService authService;
 
-    public AuthController(
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder
-    ) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
-
-    // ✅ REGISTER (VALIDATION ENABLED)
     @PostMapping("/register")
     public ResponseEntity<?> register(
             @Valid @RequestBody RegisterRequest request
     ) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
-        }
-
-        User user = User.builder()
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole())
-                .active(true)
-                .build();
-
-        userRepository.save(user);
-
+        authService.register(request);
         return ResponseEntity.ok("User registered successfully");
     }
 
-    // ✅ LOGIN
     @PostMapping("/login")
     public ResponseEntity<?> login(
             @RequestBody LoginRequest request
     ) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
-
-        if (!passwordEncoder.matches(
-                request.getPassword(),
-                user.getPassword())
-        ) {
-            throw new RuntimeException("Invalid credentials");
-        }
-
-        String token = JwtUtil.generateToken(
-                user.getEmail(),
-                user.getRole().name()
-        );
-
+        String token = authService.login(request);
         return ResponseEntity.ok(token);
     }
 }
