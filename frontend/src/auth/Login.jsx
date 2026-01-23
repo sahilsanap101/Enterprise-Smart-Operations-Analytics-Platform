@@ -15,7 +15,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login(email, password);
+      await login(email.trim(), password.trim());
 
       const role = getUserRole();
 
@@ -25,7 +25,9 @@ export default function Login() {
       else alert("Unknown role");
 
     } catch (err) {
-      alert("Invalid credentials");
+      alert(
+        err?.response?.data?.error || "Invalid credentials"
+      );
     } finally {
       setLoading(false);
     }
@@ -39,6 +41,7 @@ export default function Login() {
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
+        required
       />
 
       <input
@@ -46,6 +49,7 @@ export default function Login() {
         placeholder="Password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
+        required
       />
 
       <button type="submit" disabled={loading}>
