@@ -28,7 +28,7 @@ public class ProjectController {
         this.userRepository = userRepository;
     }
 
-    // ADMIN or MANAGER
+    // ADMIN or MANAGER can create projects
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public ResponseEntity<Project> createProject(
@@ -49,12 +49,14 @@ public class ProjectController {
         return ResponseEntity.ok(project);
     }
 
+    // ADMIN, MANAGER, EMPLOYEE can view all projects (FIXED)
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','EMPLOYEE')")
     public ResponseEntity<List<Project>> getAllProjects() {
         return ResponseEntity.ok(projectService.getAllProjects());
     }
 
+    // MANAGER can view only their projects
     @GetMapping("/my")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<List<Project>> getMyProjects(Principal principal) {

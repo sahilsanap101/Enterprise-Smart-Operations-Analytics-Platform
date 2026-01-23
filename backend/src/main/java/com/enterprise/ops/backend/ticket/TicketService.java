@@ -1,6 +1,7 @@
 package com.enterprise.ops.backend.ticket;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 
@@ -100,6 +101,15 @@ public class TicketService {
         );
 
         return updatedTicket;
+    }
+
+    // ✅ ADD THIS METHOD INSIDE TicketService.java
+    public List<Ticket> getTicketsByEmployee(String employeeEmail) {
+
+        User employee = userRepository.findByEmail(employeeEmail)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return ticketRepository.findByCreatedBy(employee);
     }
 
     // ✅ SLA logic (interview-friendly)

@@ -3,6 +3,7 @@ package com.enterprise.ops.backend.ticket;
 import jakarta.validation.Valid;
 
 import java.security.Principal;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -39,6 +40,16 @@ public class TicketController {
     ) {
         return ResponseEntity.ok(
                 ticketService.assignTicket(ticketId, managerId)
+        );
+    }
+
+    // EMPLOYEE views own tickets
+    @GetMapping("/my")
+    @PreAuthorize("hasRole('EMPLOYEE')")
+    public ResponseEntity<List<Ticket>> getMyTickets(Principal principal) {
+
+        return ResponseEntity.ok(
+                ticketService.getTicketsByEmployee(principal.getName())
         );
     }
 }
