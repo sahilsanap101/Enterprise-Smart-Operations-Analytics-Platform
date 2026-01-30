@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import CreateTicket from "../components/CreateTicket";
+import MyTasks from "../components/MyTasks";
 
 export default function EmployeeDashboard() {
   const [profile, setProfile] = useState(null);
@@ -17,8 +18,9 @@ export default function EmployeeDashboard() {
       const profileRes = await api.get("/employees/me");
       const ticketsRes = await api.get("/tickets/my");
 
-      setProfile(profileRes.data);
-      setTickets(ticketsRes.data);
+      // ✅ ApiResponse wrapper handling
+      setProfile(profileRes.data.data);
+      setTickets(ticketsRes.data.data.content);
     } catch (err) {
       console.error(err);
       setError("Failed to load employee data");
@@ -41,7 +43,7 @@ export default function EmployeeDashboard() {
     );
   }
 
-  // ❗ Safety check (should not happen, but defensive)
+  // ❗ Safety check
   if (!profile) {
     return (
       <p style={{ padding: "20px", color: "red" }}>
@@ -85,6 +87,11 @@ export default function EmployeeDashboard() {
           ))}
         </ul>
       </section>
+
+      <hr />
+
+      {/* ✅ Tasks */}
+      <MyTasks />
     </div>
   );
 }

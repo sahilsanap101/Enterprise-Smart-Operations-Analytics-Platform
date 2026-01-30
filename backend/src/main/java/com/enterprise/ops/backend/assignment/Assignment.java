@@ -5,14 +5,7 @@ import java.time.LocalDate;
 import com.enterprise.ops.backend.employee.Employee;
 import com.enterprise.ops.backend.project.Project;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,7 +14,13 @@ import lombok.Setter;
  * Assignment links Employee to Project with allocation %
  */
 @Entity
-@Table(name = "assignments")
+@Table(
+    name = "assignments",
+    indexes = {
+        @Index(name = "idx_assignment_employee", columnList = "employee_id"),
+        @Index(name = "idx_assignment_project", columnList = "project_id")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor

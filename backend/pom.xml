@@ -91,12 +91,18 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <scope>runtime</scope>
+</dependency>
+
     </dependencies>
 
     <build>
         <plugins>
 
-            <!-- ✅ REQUIRED: Spring Boot Plugin -->
+            <!--a ✅ REQUIRED: Spring Boot Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

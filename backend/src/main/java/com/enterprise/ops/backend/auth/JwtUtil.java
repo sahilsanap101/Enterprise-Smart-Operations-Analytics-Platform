@@ -21,18 +21,18 @@ public class JwtUtil {
     private final long expirationTime;
 
     public JwtUtil(
-            @Value("${jwt.secret:}") String secret,
-            @Value("${jwt.expiration:0}") long expirationTime
+            @Value("${jwt.secret:mySuperSecretKey12345678901234567890}") String secret,
+            @Value("${jwt.expiration:86400000}") long expirationTime
     ) {
         if (!StringUtils.hasText(secret) || secret.length() < 32) {
             throw new IllegalStateException(
-                    "JWT_SECRET is missing or too short (min 32 chars)"
+                    "JWT secret must be at least 32 characters"
             );
         }
 
         if (expirationTime <= 0) {
             throw new IllegalStateException(
-                    "jwt.expiration must be a positive number"
+                    "JWT expiration must be positive"
             );
         }
 

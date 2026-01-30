@@ -2,13 +2,7 @@ package com.enterprise.ops.backend.employee;
 
 import com.enterprise.ops.backend.user.User;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,7 +12,13 @@ import lombok.Setter;
  * Each employee is linked to a User account.
  */
 @Entity
-@Table(name = "employees")
+@Table(
+    name = "employees",
+    indexes = {
+        @Index(name = "idx_employee_user", columnList = "user_id"),
+        @Index(name = "idx_employee_department", columnList = "department")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,8 +40,7 @@ public class Employee {
     private boolean active;
 
     /*
-     * Many employees can be linked to one user (optional design choice)
-     * You can also make this OneToOne later.
+     * Many employees can be linked to one user
      */
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)

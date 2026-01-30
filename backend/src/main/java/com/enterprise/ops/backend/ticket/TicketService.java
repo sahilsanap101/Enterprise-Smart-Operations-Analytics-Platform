@@ -1,8 +1,11 @@
 package com.enterprise.ops.backend.ticket;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.enterprise.ops.backend.project.Project;
@@ -19,7 +22,6 @@ public class TicketService {
     private final UserRepository userRepository;
     private final TicketHistoryRepository historyRepository;
 
-    // ✅ UPDATED CONSTRUCTOR (HISTORY ADDED)
     public TicketService(
             TicketRepository ticketRepository,
             ProjectRepository projectRepository,
@@ -33,10 +35,8 @@ public class TicketService {
     }
 
     // ✅ EMPLOYEE raises ticket
-    public Ticket createTicket(
-            TicketRequest request,
-            String employeeEmail
-    ) {
+    public Ticket createTicket(TicketRequest request, String employeeEmail) {
+
         User employee = userRepository.findByEmail(employeeEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -59,19 +59,12 @@ public class TicketService {
 
         Ticket savedTicket = ticketRepository.save(ticket);
 
-        // 🔥 HISTORY: TICKET CREATED
-        logHistory(
-                savedTicket,
-                "CREATED",
-                null,
-                "OPEN",
-                employee
-        );
+        logHistory(savedTicket, "CREATED", null, "OPEN", employee);
 
         return savedTicket;
     }
 
-    // ✅ MANAGER assignment
+    // ✅ MANAGER assigns ticket
     public Ticket assignTicket(Long ticketId, Long managerId) {
 
         Ticket ticket = ticketRepository.findById(ticketId)
@@ -91,7 +84,6 @@ public class TicketService {
 
         Ticket updatedTicket = ticketRepository.save(ticket);
 
-        // 🔥 HISTORY: TICKET ASSIGNED
         logHistory(
                 updatedTicket,
                 "ASSIGNED",
@@ -103,16 +95,51 @@ public class TicketService {
         return updatedTicket;
     }
 
-    // ✅ ADD THIS METHOD INSIDE TicketService.java
-    public List<Ticket> getTicketsByEmployee(String employeeEmail) {
-
+    // ✅ EMPLOYEE: view my tickets (Paginated + Sorting)
+    public Page<Ticket> getTicketsByEmployee(
+            String employeeEmail,
+            int page,
+            int size,
+            String sortBy,
+            String direction
+    ) {
         User employee = userRepository.findByEmail(employeeEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return ticketRepository.findByCreatedBy(employee);
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.fromString(direction), sortBy)
+        );
+
+        return ticketRepository.findByCreatedBy(employee, pageable);
     }
 
-    // ✅ SLA logic (interview-friendly)
+    // ✅ MANAGER: view assigned tickets (Paginated + Sorting)
+    public Page<Ticket> getTicketsAssignedToManager(
+            String managerEmail,
+            int page,
+            int size,
+            String sortBy,
+            String direction
+    ) {
+        User manager = userRepository.findByEmail(managerEmail)
+                .orElseThrow(() -> new RuntimeException("Manager not found"));
+
+        if (manager.getRole() != Role.MANAGER) {
+            throw new RuntimeException("Access denied");
+        }
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.fromString(direction), sortBy)
+        );
+
+        return ticketRepository.findByAssignedTo(manager, pageable);
+    }
+
+    // ✅ SLA calculation
     private LocalDateTime calculateSla(TicketPriority priority) {
         return switch (priority) {
             case CRITICAL -> LocalDateTime.now().plusHours(12);
@@ -122,7 +149,7 @@ public class TicketService {
         };
     }
 
-    // ✅ HISTORY LOGGER (PRIVATE UTILITY)
+    // ✅ HISTORY LOGGER
     private void logHistory(
             Ticket ticket,
             String action,
