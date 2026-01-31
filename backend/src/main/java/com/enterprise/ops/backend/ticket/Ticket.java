@@ -15,6 +15,7 @@ import lombok.Setter;
     name = "tickets",
     indexes = {
         @Index(name = "idx_ticket_status", columnList = "status"),
+        @Index(name = "idx_ticket_type", columnList = "type"),
         @Index(name = "idx_ticket_created_by", columnList = "created_by"),
         @Index(name = "idx_ticket_assigned_to", columnList = "assigned_to"),
         @Index(name = "idx_ticket_sla_deadline", columnList = "slaDeadline")
@@ -37,28 +38,28 @@ public class Ticket {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    private TicketType type;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private TicketPriority priority;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TicketStatus status;
 
-    // EMPLOYEE who raised the ticket
     @ManyToOne
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
-    // MANAGER assigned to handle ticket
     @ManyToOne
     @JoinColumn(name = "assigned_to")
     private User assignedTo;
 
-    // Related project
     @ManyToOne
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
-    // SLA deadline
     @Column(nullable = false)
     private LocalDateTime slaDeadline;
 

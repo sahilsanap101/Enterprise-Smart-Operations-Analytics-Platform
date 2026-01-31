@@ -1,28 +1,32 @@
 package com.enterprise.ops.backend.config;
 
-import com.enterprise.ops.backend.common.ApiResponse;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+
+import com.enterprise.ops.backend.common.ApiError;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse<?>> handleRuntime(RuntimeException ex) {
+    public ResponseEntity<ApiError> handleRuntime(
+            RuntimeException ex,
+            HttpServletRequest request
+    ) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(
-                        ApiResponse.failure(ex.getMessage())
-                );
+                .body(ApiError.of(ex.getMessage(), request.getRequestURI()));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<?>> handleGeneric(Exception ex) {
+    public ResponseEntity<ApiError> handleGeneric(
+            Exception ex,
+            HttpServletRequest request
+    ) {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(
-                        ApiResponse.failure("Internal server error")
-                );
+                .body(ApiError.of("Internal server error", request.getRequestURI()));
     }
 }

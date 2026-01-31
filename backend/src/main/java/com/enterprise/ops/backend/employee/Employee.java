@@ -1,16 +1,11 @@
 package com.enterprise.ops.backend.employee;
 
 import com.enterprise.ops.backend.user.User;
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/*
- * Employee entity represents an employee in the organization.
- * Each employee is linked to a User account.
- */
 @Entity
 @Table(
     name = "employees",
@@ -29,20 +24,11 @@ public class Employee {
     private Long id;
 
     private String name;
-
     private String designation;
-
     private String department;
-
-    /*
-     * Whether employee is active in the organization
-     */
     private boolean active;
 
-    /*
-     * Many employees can be linked to one user
-     */
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @OneToOne
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
 }

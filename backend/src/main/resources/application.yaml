@@ -1,27 +1,56 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
     name: enterprise-smart-ops
 
+  # =========================
+  # DATABASE CONFIGURATION
+  # =========================
   datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:testdb}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
 
   h2:
     console:
       enabled: true
       path: /h2-console
 
+  # =========================
+  # JPA / HIBERNATE
+  # =========================
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
-    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false        # ⛔ Disabled for performance (Phase 5)
+    open-in-view: false   # ✅ Best practice
+    database-platform: ${SPRING_JPA_PLATFORM:org.hibernate.dialect.H2Dialect}
 
+  # =========================
+  # CACHING (PHASE 5)
+  # =========================
+  cache:
+    type: simple
+
+# =========================
+# JWT SECURITY
+# =========================
 jwt:
-  secret: mySuperSecretKey12345678901234567890
-  expiration: 86400000
+  secret: ${JWT_SECRET:mySuperSecretKey12345678901234567890}
+  expiration: ${JWT_EXPIRATION:86400000}
+
+# =========================
+# LOGGING (PHASE 5)
+# =========================
+logging:
+  level:
+    root: INFO
+    com.enterprise.ops.backend: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: OFF
+    org.hibernate.type.descriptor.sql: OFF
+  file:
+    name: logs/enterprise-smart-ops.log

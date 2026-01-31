@@ -28,15 +28,33 @@ public class SecurityFilterConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
+            // ✅ Enable CORS
             .cors(cors -> {})
+
+            // H2 console requires frame access
+            .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+
+            // Disable CSRF for APIs + H2 console
             .csrf(csrf -> csrf.disable())
+
+            .authorizeHttpRequests(auth -> auth
+                // ✅ Allow H2 Console
+                .requestMatchers("/h2-console/**").permitAll()
+
+                // ✅ Public Auth
+                .requestMatchers("/auth/login", "/auth/register").permitAll()
+
+                // ✅ Admin-only APIs
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+
+                // ✅ All other requests require authentication
+                .anyRequest().authenticated()
+            )
+
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**").permitAll()
-                .anyRequest().authenticated()
-            )
+
             .addFilterBefore(
                 jwtAuthenticationFilter,
                 UsernamePasswordAuthenticationFilter.class

@@ -5,31 +5,24 @@ import jakarta.validation.constraints.NotNull;
 
 public class TicketRequest {
 
-    @NotBlank(message = "Title is required")
+    @NotBlank
     private String title;
 
-    @NotBlank(message = "Description is required")
+    @NotBlank
     private String description;
 
-    @NotNull(message = "Priority is required")
+    @NotNull
+    private TicketType type;
+
+    @NotNull
     private TicketPriority priority;
 
-    @NotNull(message = "Project ID is required")
+    @NotNull
     private Long projectId;
 
-    public String getTitle() {
-        return title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public TicketPriority getPriority() {
-        return priority;
-    }
-
-    public Long getProjectId() {
-        return projectId;
-    }
+    public String getTitle() { return title; }
+    public String getDescription() { return description; }
+    public TicketType getType() { return type; }
+    public TicketPriority getPriority() { return priority; }
+    public Long getProjectId() { return projectId; }
 }

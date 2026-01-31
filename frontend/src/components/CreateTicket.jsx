@@ -8,6 +8,7 @@ export default function CreateTicket({ onTicketCreated }) {
     title: "",
     description: "",
     priority: "MEDIUM",
+    type: "ESCALATION",
     projectId: "",
   });
 
@@ -39,6 +40,7 @@ export default function CreateTicket({ onTicketCreated }) {
         title: "",
         description: "",
         priority: "MEDIUM",
+        type: "ESCALATION",
         projectId: "",
       });
     } catch (err) {
@@ -74,6 +76,12 @@ export default function CreateTicket({ onTicketCreated }) {
         <option value="MEDIUM">MEDIUM</option>
         <option value="HIGH">HIGH</option>
         <option value="CRITICAL">CRITICAL</option>
+      </select>
+      <br /><br />
+
+      <select name="type" value={form.type} onChange={handleChange}>
+        <option value="ESCALATION">ESCALATION</option>
+        <option value="DELIVERY">DELIVERY</option>
       </select>
       <br /><br />
 

@@ -1,23 +1,22 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./auth/Login";
-import ProtectedRoute from "./components/ProtectedRoute";
-
 import AdminDashboard from "./dashboards/AdminDashboard";
 import ManagerDashboard from "./dashboards/ManagerDashboard";
 import EmployeeDashboard from "./dashboards/EmployeeDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { getUserRole } from "./auth/jwtUtils";
 
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
 
         <Route
           path="/admin"
           element={
             <ProtectedRoute>
-              <AdminDashboard />
+              {getUserRole() === "ADMIN" ? <AdminDashboard /> : <Navigate to="/login" />}
             </ProtectedRoute>
           }
         />
@@ -26,7 +25,7 @@ function App() {
           path="/manager"
           element={
             <ProtectedRoute>
-              <ManagerDashboard />
+              {getUserRole() === "MANAGER" ? <ManagerDashboard /> : <Navigate to="/login" />}
             </ProtectedRoute>
           }
         />
@@ -35,15 +34,13 @@ function App() {
           path="/employee"
           element={
             <ProtectedRoute>
-              <EmployeeDashboard />
+              {getUserRole() === "EMPLOYEE" ? <EmployeeDashboard /> : <Navigate to="/login" />}
             </ProtectedRoute>
           }
         />
 
-        <Route path="*" element={<h2>Page Not Found</h2>} />
+        <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
   );
 }
-
-export default App;

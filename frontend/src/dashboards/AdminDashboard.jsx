@@ -1,39 +1,31 @@
 import { useEffect, useState } from "react";
 import { getTicketAnalytics } from "../api/analyticsApi";
+import { PieChart, Pie, Cell, Tooltip } from "recharts";
 
 export default function AdminDashboard() {
-  const [analytics, setAnalytics] = useState(null);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
-    loadAnalytics();
+    getTicketAnalytics().then(res => setData(res.data));
   }, []);
 
-  const loadAnalytics = async () => {
-    try {
-      const res = await getTicketAnalytics();
-      setAnalytics(res.data);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to load analytics");
-    }
-  };
+  if (!data) return <p>Loading...</p>;
 
-  if (!analytics) return <p>Loading admin analytics...</p>;
+  const chartData = [
+    { name: "Open", value: data.openTickets },
+    { name: "Closed", value: data.closedTickets },
+  ];
 
   return (
-    <div style={{ padding: "20px" }}>
+    <>
       <h1>Admin Dashboard</h1>
-
-      <h2>Organization Ticket Health</h2>
-
-      <ul>
-        <li>Total Tickets: {analytics.totalTickets}</li>
-        <li>Open Tickets: {analytics.openTickets}</li>
-        <li>Closed Tickets: {analytics.closedTickets}</li>
-        <li style={{ color: "red" }}>
-          SLA Breaches: {analytics.slaBreachedTickets}
-        </li>
-      </ul>
-    </div>
+      <PieChart width={300} height={300}>
+        <Pie data={chartData} dataKey="value" outerRadius={100}>
+          <Cell fill="#ff9800" />
+          <Cell fill="#4caf50" />
+        </Pie>
+        <Tooltip />
+      </PieChart>
+    </>
   );
 }

@@ -18,6 +18,10 @@ export default function Login() {
       await login(email.trim(), password.trim());
 
       const role = getUserRole();
+      if (!role) {
+        alert("Login succeeded but role missing in token");
+        return;
+      }
 
       if (role === "ADMIN") navigate("/admin");
       else if (role === "MANAGER") navigate("/manager");
@@ -25,9 +29,8 @@ export default function Login() {
       else alert("Unknown role");
 
     } catch (err) {
-      alert(
-        err?.response?.data?.error || "Invalid credentials"
-      );
+      console.error("LOGIN FAILED:", err);
+      alert("Invalid credentials or server error");
     } finally {
       setLoading(false);
     }

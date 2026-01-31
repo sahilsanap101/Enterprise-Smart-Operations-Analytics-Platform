@@ -1,14 +1,21 @@
 package com.enterprise.ops.backend.ticket;
 
-import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record TicketResponse(
-        Long id,
-        String title,
-        String priority,
-        String status,
-        String projectName,
-        String createdBy,
-        String assignedTo,
-        LocalDateTime slaDeadline
-) {}
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class TicketResponse {
+
+    private Long id;
+    private String title;
+    private String description;
+    private TicketStatus status;
+    private TicketPriority priority;
+    private TicketType type;
+
+    private Long createdById;
+    private Long assignedToId;
+}

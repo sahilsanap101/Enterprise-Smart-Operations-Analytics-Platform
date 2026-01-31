@@ -12,31 +12,37 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class DataInitializer {
 
     @Bean
-    CommandLineRunner initUsers(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    CommandLineRunner initUsers(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder
+    ) {
         return args -> {
 
             if (userRepository.findByEmail("admin@company.com").isEmpty()) {
-                User admin = new User();
-                admin.setEmail("admin@company.com");
-                admin.setPassword(passwordEncoder.encode("Admin@123"));
-                admin.setRole(Role.ADMIN);
-                userRepository.save(admin);
+                userRepository.save(User.builder()
+                        .email("admin@company.com")
+                        .password(passwordEncoder.encode("Admin@123"))
+                        .role(Role.ADMIN)
+                        .active(true)
+                        .build());
             }
 
             if (userRepository.findByEmail("manager@company.com").isEmpty()) {
-                User manager = new User();
-                manager.setEmail("manager@company.com");
-                manager.setPassword(passwordEncoder.encode("Manager@123"));
-                manager.setRole(Role.MANAGER);
-                userRepository.save(manager);
+                userRepository.save(User.builder()
+                        .email("manager@company.com")
+                        .password(passwordEncoder.encode("Manager@123"))
+                        .role(Role.MANAGER)
+                        .active(true)
+                        .build());
             }
 
             if (userRepository.findByEmail("employee@company.com").isEmpty()) {
-                User employee = new User();
-                employee.setEmail("employee@company.com");
-                employee.setPassword(passwordEncoder.encode("Employee@123"));
-                employee.setRole(Role.EMPLOYEE);
-                userRepository.save(employee);
+                userRepository.save(User.builder()
+                        .email("employee@company.com")
+                        .password(passwordEncoder.encode("Employee@123"))
+                        .role(Role.EMPLOYEE)
+                        .active(true)
+                        .build());
             }
         };
     }

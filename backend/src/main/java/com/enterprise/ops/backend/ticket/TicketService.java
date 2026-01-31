@@ -2,10 +2,7 @@ package com.enterprise.ops.backend.ticket;
 
 import java.time.LocalDateTime;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import com.enterprise.ops.backend.project.Project;
@@ -34,14 +31,20 @@ public class TicketService {
         this.historyRepository = historyRepository;
     }
 
-    // ✅ EMPLOYEE raises ticket
-    public Ticket createTicket(TicketRequest request, String employeeEmail) {
+    // CREATE: DELIVERY (Manager/Admin) | ESCALATION (Employee)
+    public Ticket createTicket(TicketRequest request, String email) {
 
-        User employee = userRepository.findByEmail(employeeEmail)
+        User creator = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (employee.getRole() != Role.EMPLOYEE) {
-            throw new RuntimeException("Only employees can raise tickets");
+        if (request.getType() == TicketType.ESCALATION &&
+                creator.getRole() != Role.EMPLOYEE) {
+            throw new RuntimeException("Only employees can raise escalation tickets");
+        }
+
+        if (request.getType() == TicketType.DELIVERY &&
+                creator.getRole() == Role.EMPLOYEE) {
+            throw new RuntimeException("Employees cannot create delivery tickets");
         }
 
         Project project = projectRepository.findById(request.getProjectId())
@@ -50,98 +53,106 @@ public class TicketService {
         Ticket ticket = new Ticket();
         ticket.setTitle(request.getTitle());
         ticket.setDescription(request.getDescription());
+        ticket.setType(request.getType());
         ticket.setPriority(request.getPriority());
         ticket.setStatus(TicketStatus.OPEN);
-        ticket.setCreatedBy(employee);
+        ticket.setCreatedBy(creator);
         ticket.setProject(project);
         ticket.setCreatedAt(LocalDateTime.now());
         ticket.setSlaDeadline(calculateSla(request.getPriority()));
 
-        Ticket savedTicket = ticketRepository.save(ticket);
+        Ticket saved = ticketRepository.save(ticket);
+        log(saved, "CREATED", null, "OPEN", creator);
 
-        logHistory(savedTicket, "CREATED", null, "OPEN", employee);
-
-        return savedTicket;
+        return saved;
     }
 
-    // ✅ MANAGER assigns ticket
-    public Ticket assignTicket(Long ticketId, Long managerId) {
+    // ASSIGN: ADMIN / MANAGER
+    public Ticket assignTicket(Long ticketId, Long assigneeId, String actorEmail) {
 
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
-        User manager = userRepository.findById(managerId)
-                .orElseThrow(() -> new RuntimeException("Manager not found"));
-
-        if (manager.getRole() != Role.MANAGER) {
-            throw new RuntimeException("Only managers can be assigned");
-        }
-
-        User oldAssignee = ticket.getAssignedTo();
-
-        ticket.setAssignedTo(manager);
-        ticket.setStatus(TicketStatus.IN_PROGRESS);
-
-        Ticket updatedTicket = ticketRepository.save(ticket);
-
-        logHistory(
-                updatedTicket,
-                "ASSIGNED",
-                oldAssignee == null ? null : oldAssignee.getEmail(),
-                manager.getEmail(),
-                manager
-        );
-
-        return updatedTicket;
-    }
-
-    // ✅ EMPLOYEE: view my tickets (Paginated + Sorting)
-    public Page<Ticket> getTicketsByEmployee(
-            String employeeEmail,
-            int page,
-            int size,
-            String sortBy,
-            String direction
-    ) {
-        User employee = userRepository.findByEmail(employeeEmail)
+        User actor = userRepository.findByEmail(actorEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Pageable pageable = PageRequest.of(
-                page,
-                size,
-                Sort.by(Sort.Direction.fromString(direction), sortBy)
-        );
-
-        return ticketRepository.findByCreatedBy(employee, pageable);
-    }
-
-    // ✅ MANAGER: view assigned tickets (Paginated + Sorting)
-    public Page<Ticket> getTicketsAssignedToManager(
-            String managerEmail,
-            int page,
-            int size,
-            String sortBy,
-            String direction
-    ) {
-        User manager = userRepository.findByEmail(managerEmail)
-                .orElseThrow(() -> new RuntimeException("Manager not found"));
-
-        if (manager.getRole() != Role.MANAGER) {
-            throw new RuntimeException("Access denied");
+        if (actor.getRole() == Role.EMPLOYEE) {
+            throw new RuntimeException("Employee cannot assign tickets");
         }
 
-        Pageable pageable = PageRequest.of(
-                page,
-                size,
-                Sort.by(Sort.Direction.fromString(direction), sortBy)
-        );
+        User assignee = userRepository.findById(assigneeId)
+                .orElseThrow(() -> new RuntimeException("Assignee not found"));
 
-        return ticketRepository.findByAssignedTo(manager, pageable);
+        User old = ticket.getAssignedTo();
+        ticket.setAssignedTo(assignee);
+        ticket.setStatus(TicketStatus.IN_PROGRESS);
+
+        Ticket saved = ticketRepository.save(ticket);
+        log(saved, "ASSIGNED",
+                old == null ? null : old.getEmail(),
+                assignee.getEmail(),
+                actor);
+
+        return saved;
     }
 
-    // ✅ SLA calculation
-    private LocalDateTime calculateSla(TicketPriority priority) {
-        return switch (priority) {
+    // FULL LIFECYCLE
+    public Ticket updateStatus(Long ticketId, TicketStatus newStatus, String email) {
+
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        TicketStatus old = ticket.getStatus();
+
+        switch (newStatus) {
+            case IN_PROGRESS -> {
+                if (user.getRole() != Role.EMPLOYEE)
+                    throw new RuntimeException("Only employee can start work");
+            }
+            case RESOLVED -> {
+                if (user.getRole() != Role.MANAGER)
+                    throw new RuntimeException("Only manager can resolve");
+            }
+            case CLOSED -> {
+                if (user.getRole() == Role.EMPLOYEE)
+                    throw new RuntimeException("Employee cannot close ticket");
+            }
+            default -> {}
+        }
+
+        ticket.setStatus(newStatus);
+        Ticket saved = ticketRepository.save(ticket);
+
+        log(saved, "STATUS_CHANGED", old.name(), newStatus.name(), user);
+
+        if (newStatus == TicketStatus.CLOSED) {
+            log(saved, "CLOSED", null, "CLOSED", user);
+        }
+
+        return saved;
+    }
+
+    // ================= NEW METHODS ADDED =================
+
+    public Page<Ticket> getMyTickets(String email, Pageable pageable) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return ticketRepository.findByCreatedBy(user, pageable);
+    }
+
+    public Page<Ticket> getAssignedTickets(String email, Pageable pageable) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return ticketRepository.findByAssignedTo(user, pageable);
+    }
+
+    // ================= HELPER METHODS =================
+
+    private LocalDateTime calculateSla(TicketPriority p) {
+        return switch (p) {
             case CRITICAL -> LocalDateTime.now().plusHours(12);
             case HIGH -> LocalDateTime.now().plusHours(24);
             case MEDIUM -> LocalDateTime.now().plusHours(72);
@@ -149,22 +160,20 @@ public class TicketService {
         };
     }
 
-    // ✅ HISTORY LOGGER
-    private void logHistory(
+    private void log(
             Ticket ticket,
             String action,
-            String oldValue,
-            String newValue,
+            String oldVal,
+            String newVal,
             User user
     ) {
-        TicketHistory history = new TicketHistory();
-        history.setTicket(ticket);
-        history.setAction(action);
-        history.setOldValue(oldValue);
-        history.setNewValue(newValue);
-        history.setPerformedBy(user);
-        history.setPerformedAt(LocalDateTime.now());
-
-        historyRepository.save(history);
+        TicketHistory h = new TicketHistory();
+        h.setTicket(ticket);
+        h.setAction(action);
+        h.setOldValue(oldVal);
+        h.setNewValue(newVal);
+        h.setPerformedBy(user);
+        h.setPerformedAt(LocalDateTime.now());
+        historyRepository.save(h);
     }
 }
